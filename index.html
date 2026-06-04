@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HSK 写作智能批改 | 国际中文教育资源</title>
+  <meta name="description" content="面向国际中文学习者的 HSK 写作评分与批改网页，可选择 HSK 等级、输入作文、查看评分建议，并在本地记录语料。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#workspace" aria-label="HSK 写作批改首页">
+      <span class="brand-icon">汉</span>
+      <span>
+        <strong>HSK 写作批改</strong>
+        <small>Chinese Writing Studio</small>
+      </span>
+    </a>
+
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="#workspace">批改台</a>
+      <a href="#rubric">评分标准</a>
+      <a href="#corpus">语料后台</a>
+      <a href="#about">作品说明</a>
+    </nav>
+
+    <button class="icon-button" id="themeToggle" type="button" aria-label="切换深浅色模式" title="切换深浅色模式">
+      <span aria-hidden="true">◐</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="workspace" id="workspace">
+      <div class="question-card">
+        <div class="card-title-row">
+          <div class="section-title">
+            <span class="question-icon" aria-hidden="true">?</span>
+            <div>
+              <p class="eyebrow">Writing Task</p>
+              <h1>题目</h1>
+            </div>
+          </div>
+
+          <div class="task-controls" aria-label="题目设置">
+            <label>
+              <span>HSK 等级</span>
+              <select id="levelSelect">
+                <option value="hsk1">HSK 1</option>
+                <option value="hsk2">HSK 2</option>
+                <option value="hsk3" selected>HSK 3</option>
+                <option value="hsk4">HSK 4</option>
+                <option value="hsk5">HSK 5</option>
+                <option value="hsk6">HSK 6</option>
+              </select>
+            </label>
+
+            <label>
+              <span>题目类型</span>
+              <select id="topicSelect"></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="topic-meta">
+          <span class="pill hot">当季新题</span>
+          <span class="pill" id="timeHint">建议用时：20 分钟</span>
+          <span class="pill" id="lengthHint">建议字数：120-180 字</span>
+        </div>
+
+        <div class="topic-body" id="topicBody"></div>
+      </div>
+
+      <div class="main-grid">
+        <section class="essay-card" aria-labelledby="essay-title">
+          <div class="card-title-row">
+            <div>
+              <p class="eyebrow">Composition</p>
+              <h2 id="essay-title">作文原文</h2>
+            </div>
+            <div class="count-badges" aria-live="polite">
+              <span id="charCount">chars: 0</span>
+              <span id="sentenceCount">sentences: 0</span>
+            </div>
+          </div>
+
+          <div class="tool-row">
+            <button class="soft-button" id="sampleButton" type="button">示例作文</button>
+            <button class="soft-button" id="connectorButton" type="button">连词助手</button>
+            <button class="soft-button" id="clearButton" type="button">清空</button>
+          </div>
+
+          <div class="connector-panel hidden" id="connectorPanel" aria-live="polite">
+            <button type="button" data-insert="首先，">首先</button>
+            <button type="button" data-insert="其次，">其次</button>
+            <button type="button" data-insert="因为">因为</button>
+            <button type="button" data-insert="所以">所以</button>
+            <button type="button" data-insert="但是">但是</button>
+            <button type="button" data-insert="总的来说，">总的来说</button>
+          </div>
+
+          <div class="learner-meta" aria-label="语料采集信息">
+            <label>
+              <span>学习者编号</span>
+              <input id="learnerId" type="text" placeholder="如 S001，可匿名">
+            </label>
+            <label>
+              <span>班级 / 批次</span>
+              <input id="learnerGroup" type="text" placeholder="如 2026 春 HSK3">
+            </label>
+          </div>
+
+          <textarea id="essayInput" rows="14" placeholder="请输入学习者的中文作文。系统会根据所选 HSK 等级，从内容切题、结构连贯、词汇等级、语法表达、汉字标点五个维度给出教学模拟评分和批改建议。"></textarea>
+
+          <div class="submit-row">
+            <label class="save-consent">
+              <input id="saveConsent" type="checkbox" checked>
+              <span>保存到本地语料后台</span>
+            </label>
+            <button class="primary-button" id="scoreButton" type="button">开始评分</button>
+          </div>
+        </section>
+
+        <aside class="score-card" aria-labelledby="score-title">
+          <div class="score-box">
+            <p class="eyebrow">Overall Score</p>
+            <output class="score-number" id="overallScore" for="essayInput">--</output>
+            <h2 id="score-title">综合评分</h2>
+            <p id="scoreSummary">选择 HSK 等级并输入作文后，点击“开始评分”查看批改结果。</p>
+          </div>
+
+          <div class="dimension-list" id="dimensionList">
+            <div class="empty-state">等待评分</div>
+          </div>
+        </aside>
+      </div>
+
+      <section class="report-card" id="report" aria-labelledby="report-title">
+        <div class="card-title-row">
+          <div>
+            <p class="eyebrow">Correction Report</p>
+            <h2 id="report-title">批改报告</h2>
+          </div>
+          <button class="soft-button" id="copyReportButton" type="button">复制报告</button>
+        </div>
+
+        <div class="report-grid">
+          <article>
+            <h3>标注文本</h3>
+            <div class="annotated-text" id="annotatedText">
+              <span class="empty-state">评分后将在这里显示划线标注和修改提示。</span>
+            </div>
+          </article>
+          <article>
+            <h3>诊断建议</h3>
+            <ul class="feedback-list" id="feedbackList">
+              <li>暂无诊断。</li>
+            </ul>
+          </article>
+          <article>
+            <h3>推荐表达</h3>
+            <ul class="feedback-list" id="expressionList">
+              <li>暂无推荐。</li>
+            </ul>
+          </article>
+          <article>
+            <h3>下一步训练</h3>
+            <ul class="feedback-list" id="trainingList">
+              <li>暂无训练建议。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <section class="page-section" id="rubric" aria-labelledby="rubric-title">
+      <div class="section-heading">
+        <p class="eyebrow">Rubric</p>
+        <h2 id="rubric-title">HSK 等级评分标准</h2>
+        <p>本网页采用教学模拟评分，不代表官方 HSK 成绩。评分逻辑参照写作任务常见要求，便于课堂练习和过程展示。</p>
+      </div>
+
+      <div class="rubric-grid" id="rubricGrid"></div>
+    </section>
+
+    <section class="page-section" id="corpus" aria-labelledby="corpus-title">
+      <div class="section-heading">
+        <p class="eyebrow">Corpus Admin</p>
+        <h2 id="corpus-title">语料后台</h2>
+        <p>静态网页版本将用户文本、等级、题目、分数、问题标签和批改报告保存在当前浏览器本地。后台支持筛选、搜索、详情查看、回填、CSV/JSON 导出和 JSON 导入。</p>
+      </div>
+
+      <div class="admin-grid">
+        <article class="stat-card">
+          <span>提交总数</span>
+          <strong id="totalRecords">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>筛选结果</span>
+          <strong id="filteredRecords">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>平均分</span>
+          <strong id="averageScore">--</strong>
+        </article>
+        <article class="stat-card">
+          <span>最高分</span>
+          <strong id="highScore">--</strong>
+        </article>
+        <article class="stat-card">
+          <span>最近等级</span>
+          <strong id="latestLevel">--</strong>
+        </article>
+        <article class="stat-card">
+          <span>常见问题</span>
+          <strong id="commonProblem">--</strong>
+        </article>
+      </div>
+
+      <div class="admin-filters" aria-label="语料筛选">
+        <label>
+          <span>关键词搜索</span>
+          <input id="searchInput" type="search" placeholder="搜索题目、文本、学习者编号">
+        </label>
+        <label>
+          <span>HSK 等级</span>
+          <select id="adminLevelFilter">
+            <option value="all">全部等级</option>
+            <option value="HSK 1">HSK 1</option>
+            <option value="HSK 2">HSK 2</option>
+            <option value="HSK 3">HSK 3</option>
+            <option value="HSK 4">HSK 4</option>
+            <option value="HSK 5">HSK 5</option>
+            <option value="HSK 6">HSK 6</option>
+          </select>
+        </label>
+        <label>
+          <span>分数区间</span>
+          <select id="adminScoreFilter">
+            <option value="all">全部分数</option>
+            <option value="excellent">优秀 86-100</option>
+            <option value="pass">达标 72-85</option>
+            <option value="near">接近 60-71</option>
+            <option value="weak">需修改 0-59</option>
+          </select>
+        </label>
+        <label>
+          <span>问题标签</span>
+          <select id="problemFilter">
+            <option value="all">全部标签</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="admin-actions">
+        <button class="primary-button" id="exportButton" type="button">导出 CSV</button>
+        <button class="primary-button" id="exportJsonButton" type="button">导出 JSON</button>
+        <label class="import-button">
+          导入 JSON
+          <input id="importJsonInput" type="file" accept="application/json">
+        </label>
+        <button class="danger-button" id="clearCorpusButton" type="button">清空语料</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>学习者</th>
+              <th>等级</th>
+              <th>题目</th>
+              <th>字数</th>
+              <th>分数</th>
+              <th>问题标签</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTable">
+            <tr>
+              <td colspan="8">暂无语料记录。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <article class="record-detail" id="recordDetail" aria-live="polite">
+        <h3>语料详情</h3>
+        <p class="empty-state">点击表格中的“详情”，可以查看作文原文、维度分、问题标签和批改报告。</p>
+      </article>
+    </section>
+
+    <section class="page-section" id="about" aria-labelledby="about-title">
+      <div class="section-heading">
+        <p class="eyebrow">Project Notes</p>
+        <h2 id="about-title">作品说明</h2>
+        <p>本作品适合作为《现代教育技术》期末作业中的“国际中文教育资源制作”网页资源。</p>
+      </div>
+
+      <div class="about-grid">
+        <article>
+          <h3>教学性</h3>
+          <p>围绕 HSK 写作训练设计等级选择、题目任务、文本输入、评分维度、批改建议和后续训练任务。</p>
+        </article>
+        <article>
+          <h3>技术性</h3>
+          <p>使用 HTML、CSS、JavaScript 实现响应式界面、文本统计、规则评分、划线标注、报告生成、本地语料记录和 CSV 导出。</p>
+        </article>
+        <article>
+          <h3>创新性</h3>
+          <p>将写作批改工具和语料收集后台结合，既能服务学习者，也能为教师后续分析学习者写作问题提供材料。</p>
+        </article>
+        <article>
+          <h3>部署方式</h3>
+          <p>本项目为纯静态网页，可直接本地打开，也可上传到 GitHub Pages。若需要真实多人语料库，可扩展连接 Supabase、Firebase 或学校服务器。</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>HSK Writing Studio · Pure HTML / CSS / JavaScript</span>
+    <a href="#workspace">回到批改台</a>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
