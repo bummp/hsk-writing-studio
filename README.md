@@ -2,6 +2,11 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fbummp%2Fhsk-writing-studio&env=SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,ADMIN_PASSWORD&envDescription=Supabase%20database%20settings%20and%20teacher%20admin%20password)
 
+## 在线访问
+
+- [Vercel 数据库增强版](https://hsk-writing-studio.vercel.app/)
+- [GitHub Pages 静态展示版](https://bummp.github.io/hsk-writing-studio/)
+
 这是一个《现代教育技术》期末作业网页资源，主题为“国际中文教育资源制作”。作品面向国际中文学习者，提供 HSK 等级选择、写作题目、作文输入、教学模拟评分、批改建议和本地语料记录功能。
 
 ## 功能
