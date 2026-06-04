@@ -1,0 +1,10 @@
+{
+  "name": "hsk-writing-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HSK writing correction studio with Vercel API and optional Supabase corpus storage.",
+  "scripts": {
+    "check": "node --check script.js && node --check api/submit.js && node --check api/admin.js && node --check api/delete.js"
+  }
+}

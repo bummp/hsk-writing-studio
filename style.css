@@ -623,6 +623,16 @@ textarea::placeholder {
   color: var(--muted);
 }
 
+.admin-status {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 7px 12px;
+  background: var(--surface-blue);
+  color: var(--blue-dark);
+  border-radius: var(--radius);
+  font-weight: 800;
+}
+
 .rubric-grid,
 .about-grid,
 .admin-grid {
@@ -821,6 +831,10 @@ tr:last-child td {
 }
 
 .hidden {
+  display: none;
+}
+
+.admin-hidden {
   display: none;
 }
 

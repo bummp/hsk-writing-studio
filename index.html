@@ -20,8 +20,7 @@
     <nav class="nav-links" aria-label="页面导航">
       <a href="#workspace">批改台</a>
       <a href="#rubric">评分标准</a>
-      <a href="#corpus">语料后台</a>
-      <a href="#about">作品说明</a>
+      <a href="#corpus">教师后台</a>
     </nav>
 
     <button class="icon-button" id="themeToggle" type="button" aria-label="切换深浅色模式" title="切换深浅色模式">
@@ -114,7 +113,7 @@
           <div class="submit-row">
             <label class="save-consent">
               <input id="saveConsent" type="checkbox" checked>
-              <span>保存到本地语料后台</span>
+              <span>我同意将作文用于教学语料收集</span>
             </label>
             <button class="primary-button" id="scoreButton" type="button">开始评分</button>
           </div>
@@ -182,11 +181,12 @@
       <div class="rubric-grid" id="rubricGrid"></div>
     </section>
 
-    <section class="page-section" id="corpus" aria-labelledby="corpus-title">
+    <section class="page-section admin-hidden" id="corpus" aria-labelledby="corpus-title">
       <div class="section-heading">
         <p class="eyebrow">Corpus Admin</p>
         <h2 id="corpus-title">语料后台</h2>
-        <p>静态网页版本将用户文本、等级、题目、分数、问题标签和批改报告保存在当前浏览器本地。后台支持筛选、搜索、详情查看、回填、CSV/JSON 导出和 JSON 导入。</p>
+        <p>教师输入后台密码后，可以读取 Vercel + Supabase 语料库。未配置远程数据库时，系统会保留本地演示语料库作为备用。</p>
+        <p class="admin-status" id="adminStatus">后台尚未解锁。</p>
       </div>
 
       <div class="admin-grid">
@@ -252,6 +252,7 @@
       </div>
 
       <div class="admin-actions">
+        <button class="soft-button" id="backToStudioButton" type="button">返回批改台</button>
         <button class="primary-button" id="exportButton" type="button">导出 CSV</button>
         <button class="primary-button" id="exportJsonButton" type="button">导出 JSON</button>
         <label class="import-button">
@@ -289,32 +290,6 @@
       </article>
     </section>
 
-    <section class="page-section" id="about" aria-labelledby="about-title">
-      <div class="section-heading">
-        <p class="eyebrow">Project Notes</p>
-        <h2 id="about-title">作品说明</h2>
-        <p>本作品适合作为《现代教育技术》期末作业中的“国际中文教育资源制作”网页资源。</p>
-      </div>
-
-      <div class="about-grid">
-        <article>
-          <h3>教学性</h3>
-          <p>围绕 HSK 写作训练设计等级选择、题目任务、文本输入、评分维度、批改建议和后续训练任务。</p>
-        </article>
-        <article>
-          <h3>技术性</h3>
-          <p>使用 HTML、CSS、JavaScript 实现响应式界面、文本统计、规则评分、划线标注、报告生成、本地语料记录和 CSV 导出。</p>
-        </article>
-        <article>
-          <h3>创新性</h3>
-          <p>将写作批改工具和语料收集后台结合，既能服务学习者，也能为教师后续分析学习者写作问题提供材料。</p>
-        </article>
-        <article>
-          <h3>部署方式</h3>
-          <p>本项目为纯静态网页，可直接本地打开，也可上传到 GitHub Pages。若需要真实多人语料库，可扩展连接 Supabase、Firebase 或学校服务器。</p>
-        </article>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">

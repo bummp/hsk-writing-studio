@@ -182,6 +182,8 @@ const topics = {
 const connectors = ["首先", "其次", "然后", "最后", "因此", "所以", "但是", "不过", "虽然", "如果", "因为", "总的来说", "与此同时", "此外", "由此可见"];
 const advancedWords = ["影响", "观点", "原因", "结果", "社会", "文化", "发展", "选择", "价值", "效率", "自律", "创新", "判断", "责任", "能力", "交流", "理解", "分析", "证明", "解决"];
 const localStorageKey = "hskWritingCorpus";
+const adminSessionKey = "hskAdminPassword";
+const localAdminPassword = "teacher2026";
 
 const levelSelect = document.getElementById("levelSelect");
 const topicSelect = document.getElementById("topicSelect");
@@ -207,6 +209,8 @@ const feedbackList = document.getElementById("feedbackList");
 const expressionList = document.getElementById("expressionList");
 const trainingList = document.getElementById("trainingList");
 const rubricGrid = document.getElementById("rubricGrid");
+const corpusSection = document.getElementById("corpus");
+const adminStatus = document.getElementById("adminStatus");
 const recordsTable = document.getElementById("recordsTable");
 const totalRecords = document.getElementById("totalRecords");
 const filteredRecords = document.getElementById("filteredRecords");
@@ -221,6 +225,9 @@ const problemFilter = document.getElementById("problemFilter");
 const recordDetail = document.getElementById("recordDetail");
 
 let latestReport = "";
+let remoteRecords = null;
+let usingRemoteCorpus = false;
+let adminPassword = sessionStorage.getItem(adminSessionKey) || "";
 
 function getCurrentLevel() {
   return levels[levelSelect.value];
@@ -579,6 +586,12 @@ function setRecords(records) {
   localStorage.setItem(localStorageKey, JSON.stringify(records.map(normalizeRecord)));
 }
 
+function getCorpusRecords() {
+  return usingRemoteCorpus && Array.isArray(remoteRecords)
+    ? remoteRecords.map(normalizeRecord)
+    : getRecords();
+}
+
 function normalizeRecord(record) {
   return {
     id: record.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
@@ -597,13 +610,8 @@ function normalizeRecord(record) {
   };
 }
 
-function saveRecord(result, text) {
-  if (!saveConsent.checked) {
-    return;
-  }
-
-  const records = getRecords();
-  records.unshift({
+function buildSubmissionRecord(result, text) {
+  return normalizeRecord({
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
     createdAt: new Date().toISOString(),
     learnerId: learnerId.value.trim() || "匿名",
@@ -622,11 +630,58 @@ function saveRecord(result, text) {
     text,
     report: latestReport
   });
+}
+
+async function postJson(url, payload) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  return response.json();
+}
+
+async function submitRemoteRecord(record) {
+  if (location.protocol === "file:") {
+    return { ok: false, configured: false, message: "Local file mode" };
+  }
+
+  try {
+    return await postJson("/api/submit", {
+      ...record,
+      userAgent: navigator.userAgent
+    });
+  } catch (error) {
+    return { ok: false, configured: false, message: error.message };
+  }
+}
+
+function saveLocalRecord(record) {
+  const records = getRecords();
+  records.unshift(record);
   setRecords(records.slice(0, 300));
   renderCorpus();
 }
 
-function getFilteredRecords(records = getRecords()) {
+function saveRecord(result, text) {
+  if (!saveConsent.checked) {
+    return;
+  }
+
+  const record = buildSubmissionRecord(result, text);
+  saveLocalRecord(record);
+  submitRemoteRecord(record).then((response) => {
+    if (response.ok) {
+      console.info("Remote corpus saved.");
+    } else {
+      console.info("Remote corpus fallback:", response.message || "not configured");
+    }
+  });
+}
+
+function getFilteredRecords(records = getCorpusRecords()) {
   const keyword = searchInput.value.trim().toLowerCase();
   const level = adminLevelFilter.value;
   const scoreBand = adminScoreFilter.value;
@@ -684,7 +739,7 @@ function getCommonProblem(records) {
 }
 
 function renderCorpus() {
-  const records = getRecords();
+  const records = getCorpusRecords();
   renderProblemOptions(records);
   const filtered = getFilteredRecords(records);
   totalRecords.textContent = String(records.length);
@@ -723,7 +778,7 @@ function renderCorpus() {
 
   recordsTable.querySelectorAll("[data-load]").forEach((button) => {
     button.addEventListener("click", () => {
-      const record = getRecords().find((item) => item.id === button.dataset.load);
+      const record = getCorpusRecords().find((item) => item.id === button.dataset.load);
       if (!record) return;
       essayInput.value = record.text;
       learnerId.value = record.learnerId === "匿名" ? "" : record.learnerId;
@@ -735,16 +790,26 @@ function renderCorpus() {
 
   recordsTable.querySelectorAll("[data-detail]").forEach((button) => {
     button.addEventListener("click", () => {
-      const record = getRecords().find((item) => item.id === button.dataset.detail);
+      const record = getCorpusRecords().find((item) => item.id === button.dataset.detail);
       if (record) showRecordDetail(record);
     });
   });
 
   recordsTable.querySelectorAll("[data-delete]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       if (!confirm("确定删除这条语料记录吗？")) return;
-      setRecords(getRecords().filter((item) => item.id !== button.dataset.delete));
-      renderCorpus();
+
+      if (usingRemoteCorpus) {
+        const response = await deleteRemoteRecord(button.dataset.delete);
+        if (!response.ok) {
+          alert(response.configured === false ? "远程后台未配置，无法删除远程记录。" : "远程删除失败，请稍后再试。");
+          return;
+        }
+        await loadRemoteRecords(adminPassword);
+      } else {
+        setRecords(getRecords().filter((item) => item.id !== button.dataset.delete));
+        renderCorpus();
+      }
     });
   });
 }
@@ -854,6 +919,52 @@ function importJsonFile(file) {
   reader.readAsText(file, "utf-8");
 }
 
+function setAdminStatus(message) {
+  adminStatus.textContent = message;
+}
+
+async function loadRemoteRecords(password) {
+  if (location.protocol === "file:") {
+    return { ok: false, configured: false, message: "Local file mode" };
+  }
+
+  try {
+    const response = await postJson("/api/admin", { password });
+
+    if (response.ok) {
+      remoteRecords = response.records || [];
+      usingRemoteCorpus = true;
+      setAdminStatus(`已连接远程 Supabase 语料库，共 ${remoteRecords.length} 条记录。`);
+      renderCorpus();
+      return response;
+    }
+
+    return response;
+  } catch (error) {
+    return { ok: false, configured: false, message: error.message };
+  }
+}
+
+async function deleteRemoteRecord(id) {
+  try {
+    return await postJson("/api/delete", { password: adminPassword, id });
+  } catch (error) {
+    return { ok: false, configured: true, message: error.message };
+  }
+}
+
+function unlockLocalCorpus(password) {
+  if (password !== localAdminPassword) {
+    return false;
+  }
+
+  remoteRecords = null;
+  usingRemoteCorpus = false;
+  setAdminStatus("当前为本地演示语料库。部署 Vercel 并配置 Supabase 后，将自动读取远程数据库。");
+  renderCorpus();
+  return true;
+}
+
 function renderRubric() {
   rubricGrid.innerHTML = Object.values(levels).map((level) => `
     <article class="rubric-card">
@@ -886,6 +997,52 @@ function runScoring() {
   renderFeedback(result, text);
   saveRecord(result, text);
   document.getElementById("report").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function showCorpusAdmin() {
+  if (!adminPassword) {
+    adminPassword = prompt("请输入教师后台密码。\n\nVercel 部署后使用环境变量 ADMIN_PASSWORD。\n本地演示密码：teacher2026") || "";
+  }
+
+  if (!adminPassword) {
+    return;
+  }
+
+  corpusSection.classList.remove("admin-hidden");
+  setAdminStatus("正在验证后台密码并读取语料库...");
+  corpusSection.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const remoteResponse = await loadRemoteRecords(adminPassword);
+
+  if (remoteResponse.ok) {
+    sessionStorage.setItem(adminSessionKey, adminPassword);
+    return;
+  }
+
+  if (remoteResponse.configured && remoteResponse.message === "Invalid admin password") {
+    sessionStorage.removeItem(adminSessionKey);
+    adminPassword = "";
+    corpusSection.classList.add("admin-hidden");
+    alert("教师后台密码错误。");
+    return;
+  }
+
+  if (!unlockLocalCorpus(adminPassword)) {
+    sessionStorage.removeItem(adminSessionKey);
+    adminPassword = "";
+    corpusSection.classList.add("admin-hidden");
+    alert("远程后台未配置或无法连接。本地演示请使用密码 teacher2026。");
+  }
+}
+
+function hideCorpusAdmin() {
+  corpusSection.classList.add("admin-hidden");
+  remoteRecords = null;
+  usingRemoteCorpus = false;
+  document.getElementById("workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (location.hash === "#corpus") {
+    history.replaceState(null, "", `${location.pathname}${location.search}`);
+  }
 }
 
 levelSelect.addEventListener("change", updateTopicOptions);
@@ -933,6 +1090,14 @@ document.getElementById("copyReportButton").addEventListener("click", async () =
 
 document.getElementById("exportButton").addEventListener("click", exportCsv);
 document.getElementById("exportJsonButton").addEventListener("click", exportJson);
+document.getElementById("backToStudioButton").addEventListener("click", hideCorpusAdmin);
+
+document.querySelectorAll('a[href="#corpus"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    showCorpusAdmin();
+  });
+});
 
 [searchInput, adminLevelFilter, adminScoreFilter, problemFilter].forEach((control) => {
   control.addEventListener(control === searchInput ? "input" : "change", renderCorpus);
@@ -967,3 +1132,7 @@ updateTopicOptions();
 updateCounts();
 renderRubric();
 renderCorpus();
+
+if (location.hash === "#corpus") {
+  showCorpusAdmin();
+}
