@@ -606,6 +606,121 @@ textarea::placeholder {
   color: var(--blue);
 }
 
+.correction-section {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.correction-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.correction-heading h3 {
+  font-size: clamp(1.45rem, 2vw, 2rem);
+}
+
+.correction-count {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  background: var(--surface-blue);
+  color: var(--blue-dark);
+  border-radius: 50%;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.correction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.correction-card {
+  position: relative;
+  min-width: 0;
+  padding: 22px;
+  background: #f2f4f7;
+  border-radius: var(--radius);
+  border-top: 5px solid #25364f;
+}
+
+body.dark .correction-card {
+  background: #202b3a;
+}
+
+.wrong-line,
+.right-line,
+.correction-note {
+  position: relative;
+  margin: 0;
+  padding-left: 28px;
+}
+
+.wrong-line {
+  color: #c01820;
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.right-line {
+  margin-top: 18px;
+  padding: 16px 16px 16px 42px;
+  color: #008b83;
+  background: var(--surface);
+  border-radius: var(--radius);
+  font-size: 1.04rem;
+  font-weight: 800;
+  line-height: 1.75;
+}
+
+.correction-note {
+  margin-top: 14px;
+  color: var(--text);
+  line-height: 1.75;
+}
+
+.wrong-line::before,
+.right-line::before,
+.correction-note::before {
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  font-weight: 900;
+}
+
+.wrong-line::before {
+  content: "×";
+  color: #c01820;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.right-line::before {
+  content: "✓";
+  left: 16px;
+  color: #008b83;
+  font-size: 1.35rem;
+}
+
+.correction-note::before {
+  content: "注";
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--blue-dark);
+  background: var(--surface-blue);
+  border-radius: 50%;
+  font-size: 0.78rem;
+}
+
 .page-section {
   width: min(1920px, calc(100% - clamp(28px, 6.8vw, 128px)));
   margin: 28px auto 0;
@@ -864,6 +979,10 @@ tr:last-child td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .correction-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .rubric-grid,
   .about-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -953,6 +1072,7 @@ tr:last-child td {
   }
 
   .report-grid,
+  .correction-grid,
   .rubric-grid,
   .about-grid,
   .admin-grid,

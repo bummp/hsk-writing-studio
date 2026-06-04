@@ -56,7 +56,7 @@
 本地文件模式下，远程数据库不会启用。教师后台本地演示密码为：
 
 ```text
-teacher2026
+hsk2026admin
 ```
 
 ## Vercel + Supabase 部署

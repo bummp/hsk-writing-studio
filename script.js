@@ -183,7 +183,7 @@ const connectors = ["首先", "其次", "然后", "最后", "因此", "所以", 
 const advancedWords = ["影响", "观点", "原因", "结果", "社会", "文化", "发展", "选择", "价值", "效率", "自律", "创新", "判断", "责任", "能力", "交流", "理解", "分析", "证明", "解决"];
 const localStorageKey = "hskWritingCorpus";
 const adminSessionKey = "hskAdminPassword";
-const localAdminPassword = "teacher2026";
+const localAdminPassword = "hsk2026admin";
 
 const levelSelect = document.getElementById("levelSelect");
 const topicSelect = document.getElementById("topicSelect");
@@ -208,6 +208,8 @@ const annotatedText = document.getElementById("annotatedText");
 const feedbackList = document.getElementById("feedbackList");
 const expressionList = document.getElementById("expressionList");
 const trainingList = document.getElementById("trainingList");
+const correctionGrid = document.getElementById("correctionGrid");
+const correctionCount = document.getElementById("correctionCount");
 const rubricGrid = document.getElementById("rubricGrid");
 const corpusSection = document.getElementById("corpus");
 const adminStatus = document.getElementById("adminStatus");
@@ -549,11 +551,191 @@ function annotateText(text) {
   return html;
 }
 
+function getSentenceUnits(text) {
+  return text
+    .split(/(?<=[。！？!?；;])|\n+/)
+    .map((item) => item.trim())
+    .filter(isMeaningfulSentence)
+    .filter((item) => chineseChars(item) > 0 || /[A-Za-z]{2,}/.test(item))
+    .filter(Boolean);
+}
+
+function trimSentence(sentence, maxLength = 96) {
+  return sentence.length > maxLength ? `${sentence.slice(0, maxLength)}……` : sentence;
+}
+
+function isMeaningfulSentence(sentence) {
+  const normalized = sentence
+    .replace(/[。！？!?；;，,：:\s]/g, "")
+    .replace(/\?/g, "");
+  return normalized.length >= 2;
+}
+
+function splitLongSentence(sentence) {
+  const clean = sentence.replace(/[。！？!?；;]+$/g, "");
+  const splitters = ["但是", "不过", "所以", "因此", "因为", "同时", "另外", "而且", "如果"];
+  const splitter = splitters.find((item) => clean.includes(item) && clean.indexOf(item) > 8);
+
+  if (!splitter) {
+    return `${clean.slice(0, 28)}。${clean.slice(28)}。`;
+  }
+
+  const index = clean.indexOf(splitter);
+  return `${clean.slice(0, index)}。${clean.slice(index)}。`;
+}
+
+function improveSentence(sentence) {
+  let improved = sentence.trim();
+
+  improved = improved.replace(/[A-Za-z]{2,}/g, "中文内容");
+  improved = improved.replace(/([\u4e00-\u9fff])\1{2,}/g, "$1");
+  improved = improved.replace(/很快的/g, "很快地");
+  improved = improved.replace(/努力的学习/g, "努力地学习");
+  improved = improved.replace(/认真的听/g, "认真地听");
+  improved = improved.replace(/我有去/g, "我去过");
+  improved = improved.replace(/我有学习/g, "我学习过");
+
+  if (!/[。！？!?；;]$/.test(improved)) {
+    improved += "。";
+  }
+
+  return improved;
+}
+
+function buildCorrectionCards(text, result) {
+  const sentences = getSentenceUnits(text);
+  const cards = [];
+  const addCard = (wrong, right, note, type) => {
+    const normalizedWrong = trimSentence(wrong);
+    const normalizedRight = trimSentence(right);
+    if (
+      !isMeaningfulSentence(normalizedWrong)
+      || !isMeaningfulSentence(normalizedRight)
+      || cards.some((item) => item.wrong === normalizedWrong)
+    ) {
+      return;
+    }
+    cards.push({
+      wrong: normalizedWrong,
+      right: normalizedRight,
+      note,
+      type
+    });
+  };
+
+  sentences.forEach((sentence) => {
+    if (cards.length >= 5) return;
+
+    if (/[A-Za-z]{2,}/.test(sentence)) {
+      addCard(
+        sentence,
+        improveSentence(sentence),
+        "英文混入：HSK 写作中应尽量使用中文表达，避免中英文混杂。",
+        "mixed"
+      );
+      return;
+    }
+
+    if (sentence.length > 45) {
+      addCard(
+        sentence,
+        splitLongSentence(sentence),
+        "句子过长：建议拆分长句，使主谓关系更清楚，降低语法错误概率。",
+        "long"
+      );
+      return;
+    }
+
+    if (/([\u4e00-\u9fff])\1{2,}/.test(sentence)) {
+      addCard(
+        sentence,
+        improveSentence(sentence),
+        "重复输入：检测到连续重复汉字，建议检查是否为输入错误。",
+        "repeat"
+      );
+      return;
+    }
+
+    if (/很快的|努力的学习|认真的听|我有去|我有学习/.test(sentence)) {
+      addCard(
+        sentence,
+        improveSentence(sentence),
+        "词语搭配或助词使用不自然：注意“的、地、得”和常用动词搭配。",
+        "usage"
+      );
+    }
+  });
+
+  if (cards.length < 5 && !/[。！？!?；;]/.test(text) && text.trim()) {
+    addCard(
+      text,
+      `${text.trim()}。`,
+      "标点不足：作文需要使用句号、逗号等中文标点，帮助读者理解句子边界。",
+      "punctuation"
+    );
+  }
+
+  const lowDimensions = result.dimensions
+    .map((item) => ({ ...item, score: Math.round(item.score) }))
+    .filter((item) => item.score < 15)
+    .sort((a, b) => a.score - b.score);
+
+  lowDimensions.forEach((dimension) => {
+    if (cards.length >= 5 || !sentences.length) return;
+    const sentence = sentences[cards.length % sentences.length];
+    if (!isMeaningfulSentence(sentence)) return;
+
+    if (dimension.name === "内容切题") {
+      addCard(
+        sentence,
+        `${sentence.replace(/[。！？!?；;]+$/g, "")}，这和题目中的“${getCurrentTopic().title}”有关。`,
+        "内容切题不足：建议在句子中直接回应题目关键词，让观点更明确。",
+        "content"
+      );
+    } else if (dimension.name === "结构连贯") {
+      addCard(
+        sentence,
+        `首先，${sentence.replace(/[。！？!?；;]+$/g, "")}。`,
+        "结构连贯不足：可以补充“首先、其次、因此、总的来说”等连接词。",
+        "structure"
+      );
+    } else if (dimension.name === "词汇等级") {
+      addCard(
+        sentence,
+        sentence.replace(/好/g, "有帮助").replace(/喜欢/g, "感兴趣"),
+        "词汇较简单：可以替换为更准确、更书面化的表达。",
+        "vocabulary"
+      );
+    }
+  });
+
+  return cards.slice(0, 5);
+}
+
+function renderCorrectionCards(text, result) {
+  const cards = buildCorrectionCards(text, result);
+  correctionCount.textContent = String(cards.length);
+
+  if (!cards.length) {
+    correctionGrid.innerHTML = '<p class="empty-state">暂未发现明显词汇或语法问题，可以继续从内容深度和例子丰富度方面优化。</p>';
+    return;
+  }
+
+  correctionGrid.innerHTML = cards.map((card) => `
+    <article class="correction-card">
+      <p class="wrong-line">${escapeHtml(card.wrong)}</p>
+      <p class="right-line">${escapeHtml(card.right)}</p>
+      <p class="correction-note">${escapeHtml(card.note)}</p>
+    </article>
+  `).join("");
+}
+
 function renderFeedback(result, text) {
   annotatedText.innerHTML = annotateText(text);
   feedbackList.innerHTML = result.feedback.feedback.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   expressionList.innerHTML = result.feedback.expressions.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   trainingList.innerHTML = result.feedback.training.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  renderCorrectionCards(text, result);
 
   latestReport = [
     `HSK等级：${getCurrentLevel().label}`,
@@ -1001,7 +1183,7 @@ function runScoring() {
 
 async function showCorpusAdmin() {
   if (!adminPassword) {
-    adminPassword = prompt("请输入教师后台密码。\n\nVercel 部署后使用环境变量 ADMIN_PASSWORD。\n本地演示密码：teacher2026") || "";
+    adminPassword = prompt("请输入教师后台密码。\n\nVercel 部署后使用环境变量 ADMIN_PASSWORD。\n本地演示密码：hsk2026admin") || "";
   }
 
   if (!adminPassword) {
@@ -1031,7 +1213,7 @@ async function showCorpusAdmin() {
     sessionStorage.removeItem(adminSessionKey);
     adminPassword = "";
     corpusSection.classList.add("admin-hidden");
-    alert("远程后台未配置或无法连接。本地演示请使用密码 teacher2026。");
+    alert("远程后台未配置或无法连接。本地演示请使用密码 hsk2026admin。");
   }
 }
 
