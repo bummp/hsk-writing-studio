@@ -656,7 +656,8 @@ body.dark .correction-card {
 
 .wrong-line,
 .right-line,
-.correction-note {
+.correction-note,
+.example-line {
   position: relative;
   margin: 0;
   padding-left: 28px;
@@ -686,9 +687,25 @@ body.dark .correction-card {
   line-height: 1.75;
 }
 
+.example-line {
+  margin-top: 14px;
+  padding: 12px 14px 12px 42px;
+  color: #24516c;
+  background: #e9f3f8;
+  border-radius: var(--radius);
+  font-weight: 800;
+  line-height: 1.75;
+}
+
+body.dark .example-line {
+  color: #b8def3;
+  background: #193246;
+}
+
 .wrong-line::before,
 .right-line::before,
-.correction-note::before {
+.correction-note::before,
+.example-line::before {
   position: absolute;
   left: 0;
   top: 0.1em;
@@ -719,6 +736,25 @@ body.dark .correction-card {
   background: var(--surface-blue);
   border-radius: 50%;
   font-size: 0.78rem;
+}
+
+.example-line::before {
+  content: "例";
+  left: 14px;
+  top: 14px;
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  color: #24516c;
+  background: #cfe8f3;
+  border-radius: 50%;
+  font-size: 0.78rem;
+}
+
+body.dark .example-line::before {
+  color: #193246;
+  background: #b8def3;
 }
 
 .page-section {

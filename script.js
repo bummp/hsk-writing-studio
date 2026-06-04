@@ -619,6 +619,7 @@ function buildCorrectionCards(text, result) {
       wrong: normalizedWrong,
       right: normalizedRight,
       note,
+      example: getCorrectionExample(type),
       type
     });
   };
@@ -712,6 +713,21 @@ function buildCorrectionCards(text, result) {
   return cards.slice(0, 5);
 }
 
+function getCorrectionExample(type) {
+  const examples = {
+    mixed: "我每天用中文写日记，这样可以提高表达能力。",
+    long: "我喜欢在校园里学习。下课后，我会和同学一起复习生词。",
+    repeat: "今天的课程很有意思，我学会了很多新词语。",
+    usage: "我认真地听老师讲课，也努力学习新的语法。",
+    punctuation: "我喜欢校园生活，因为这里有老师、朋友和丰富的活动。",
+    content: `关于“${getCurrentTopic().title}”，我认为学习中文需要坚持练习。`,
+    structure: "首先，我会预习课文；其次，我会完成作业；最后，我会复习错题。",
+    vocabulary: "这次活动很有帮助，让我对中国文化更感兴趣。"
+  };
+
+  return examples[type] || "我会根据老师的建议修改作文，让表达更清楚、更自然。";
+}
+
 function renderCorrectionCards(text, result) {
   const cards = buildCorrectionCards(text, result);
   correctionCount.textContent = String(cards.length);
@@ -726,6 +742,7 @@ function renderCorrectionCards(text, result) {
       <p class="wrong-line">${escapeHtml(card.wrong)}</p>
       <p class="right-line">${escapeHtml(card.right)}</p>
       <p class="correction-note">${escapeHtml(card.note)}</p>
+      <p class="example-line">${escapeHtml(card.example)}</p>
     </article>
   `).join("");
 }
