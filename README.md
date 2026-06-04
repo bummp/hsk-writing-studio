@@ -115,11 +115,3 @@ https://你的用户名.github.io/hsk-writing-studio/
 ```
 
 GitHub Pages 只能运行静态前端，不能运行 `api/` 后端函数；因此 GitHub Pages 版本只能使用本地语料库。需要真实数据库时请使用 Vercel 部署。
-
-## 作业信息
-
-课程：现代教育技术  
-主题：国际中文教育资源制作  
-作品名称：HSK 写作智能批改网页  
-作者：待补充  
-技术：HTML、CSS、JavaScript、GitHub Pages
